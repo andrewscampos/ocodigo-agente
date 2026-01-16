@@ -1252,77 +1252,79 @@
             // First notification after 8 seconds
             setTimeout(showNotification, 8000);
         });
-    // lê parâmetros da URL
-    function getUrlParams() {
-        const params = new URLSearchParams(window.location.search);
+        // lê parâmetros da URL
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
 
-        return {
-            campaignId: params.get('campaignId'),   // ?campaignId=2
-            sequenceId: params.get('sequenceId'),   // ?sequenceId=1
-            email: params.get('email')               // ?email=email@email.com
-        };
-    }
-
-    // pega infos do navegador
-    function collectClientInfo() {
-        return {
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            languages: navigator.languages,
-            cookieEnabled: navigator.cookieEnabled,
-            hardwareConcurrency: navigator.hardwareConcurrency,
-            deviceMemory: navigator.deviceMemory || null,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            timezoneOffsetMin: new Date().getTimezoneOffset(),
-            screen: {
-                width: screen.width,
-                height: screen.height,
-                availWidth: screen.availWidth,
-                availHeight: screen.availHeight,
-                colorDepth: screen.colorDepth,
-                pixelDepth: screen.pixelDepth
-            },
-            connection: (navigator.connection && {
-                effectiveType: navigator.connection.effectiveType,
-                downlink: navigator.connection.downlink,
-                rtt: navigator.connection.rtt
-            }) || null
-        };
-    }
-
-    // pega IP público
-    async function getPublicIp() {
-        try {
-            const res = await fetch('https://api.ipify.org?format=json');
-            const j = await res.json();
-            return j.ip;
-        } catch (err) {
-            console.warn('Não conseguiu obter IP público:', err);
-            return null;
+            return {
+                campaignId: params.get('campaignId'),   // ?campaignId=2
+                sequenceId: params.get('sequenceId'),   // ?sequenceId=1
+                email: params.get('email')               // ?email=email@email.com
+            };
         }
-    }
 
-    // envia tudo para o backend
-    async function sendVisitInfo() {
-        const clientInfo = collectClientInfo();
-        const urlParams = getUrlParams();
+        // pega infos do navegador
+        function collectClientInfo() {
+            return {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                languages: navigator.languages,
+                cookieEnabled: navigator.cookieEnabled,
+                hardwareConcurrency: navigator.hardwareConcurrency,
+                deviceMemory: navigator.deviceMemory || null,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                timezoneOffsetMin: new Date().getTimezoneOffset(),
+                url: window.location.href,
+                referrer: document.referrer,
+                screen: {
+                    width: screen.width,
+                    height: screen.height,
+                    availWidth: screen.availWidth,
+                    availHeight: screen.availHeight,
+                    colorDepth: screen.colorDepth,
+                    pixelDepth: screen.pixelDepth
+                },
+                connection: (navigator.connection && {
+                    effectiveType: navigator.connection.effectiveType,
+                    downlink: navigator.connection.downlink,
+                    rtt: navigator.connection.rtt
+                }) || null
+            };
+        }
 
-        const payload = {
-            ...clientInfo,
-            ...urlParams,
-            publicIp: await getPublicIp(),
-            visitedAt: new Date().toISOString()
-        };
+        // pega IP público
+        async function getPublicIp() {
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const j = await res.json();
+                return j.ip;
+            } catch (err) {
+                console.warn('Não conseguiu obter IP público:', err);
+                return null;
+            }
+        }
 
-        await fetch('https://api.lumigateway.com.br/manager-campaign/api/visit-log', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        }).catch(err => console.warn('Erro ao enviar visit info:', err));
-    }
+        // envia tudo para o backend
+        async function sendVisitInfo() {
+            const clientInfo = collectClientInfo();
+            const urlParams = getUrlParams();
 
-    // chama automaticamente
-    sendVisitInfo();
+            const payload = {
+                ...clientInfo,
+                ...urlParams,
+                publicIp: await getPublicIp(),
+                visitedAt: new Date().toISOString()
+            };
+
+            await fetch('https://api.lumigateway.com.br/manager-campaign/api/visit-log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(err => console.warn('Erro ao enviar visit info:', err));
+        }
+
+        // chama automaticamente
+        sendVisitInfo();
     </script>
 
 </body>
